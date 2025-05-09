@@ -1,0 +1,3 @@
+// Backpack Spawns
+newSpawnTable => { "spawnName": "HDBackpack", "tableName": "Gearbox.BackpackSpawns", "replaces": "false" }
+addSpawnTableSingleEntry => { "tableName": "Gearbox.BackpackSpawns", "name": "HDGearbox", "chance": "#gb_box_spawn_bias" }
