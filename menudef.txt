@@ -3,31 +3,17 @@ OptionMenu GearBoxes
 
 	Title "Gear Box Options"
     StaticText  "Control the spawn rate of gear boxes.             ", "white"
-	Option "Box Spawn Rate:        ", "gb_box_spawn_bias", "DropBias"
+	Slider "Box Spawn Rate:", "gb_box_spawn_bias", 0.0, 100, .01, 2
 	SafeCommand "Reset box.  options", "resetcvar gb_box_spawn_bias"
 
 }
 
-// Drop Bias (for items that don't replace). 
-OptionValue "DropBias"
+AddOptionMenu "OptionsMenu"
 {
-	-1,    "Disabled"
-	 0,    "With All"
-	 2,    "1 in 3"
-	 4,    "1 in 5"
-	 9,    "1 in 10"
-	 14,   "1 in 15"
-	 19,   "1 in 20"
-	 24,   "1 in 25"
-	 49,   "1 in 50"
-	 99,   "1 in 100"
-	 149,  "1 in 150"
-	 199,  "1 in 200"
+	Submenu "Gear Box Options", "GearBoxes"
 }
 
-
-
-AddOptionMenu "OptionsMenu"
+AddOptionMenu "HDAddonMenu"
 {
 	Submenu "Gear Box Options", "GearBoxes"
 }
