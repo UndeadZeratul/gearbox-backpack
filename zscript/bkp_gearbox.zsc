@@ -83,21 +83,19 @@ class HDGearBox: HDBackpack
 		
 		override void beginplay()
 		{	
+			Super.BeginPlay();
+
 			// Default weight threshold.
 			CrateStatus.push(500);
-			
+
 			// Default bulk modification. 
 			Bulkmod = 0.25;
-			
-			Super.BeginPlay();
+
+			// Initialize ItemStorage
+			Storage = New('GearBox_ItemStorage');
+			UpdateCapacity();
 		}
 
-		override void postbeginplay()
-		{	
-			Super.PostBeginPlay();
-			Storage = New('GearBox_ItemStorage');
-		}
-		
 		override string pickupmessage()
 		{
 			string msg=super.pickupmessage();
@@ -165,6 +163,46 @@ class HDGearBox: HDBackpack
 		}
 		
 		override string, double GetPickupSprite() { return "GRCRA0", 1.0; }
+
+		override void RandomContents(bool clear) {
+			if (clear) {
+				Storage.Destroy();
+				Storage = new('GearBox_ItemStorage');
+				UpdateCapacity();
+			}
+
+			if (hd_debug)A_Log("\n*  Gear Crate:  *");
+
+			int MaxItems = clamp(int(7 * hd_encumbrance), 1, 7);
+			for(int i = 0; i < MaxItems; ++i){
+				int amt;
+				class<Inventory> Picked = BPSpawnPool.GetValidItem();
+				switch(Storage.CheckConditions(null, Picked)){
+					case IType_Weapon:
+						amt = 1;
+						Storage.AddAmount(Picked, amt, flags: 0);
+						break;
+					case IType_Mag:
+						let mag = GetDefaultByType((class<HDMagAmmo>)(Picked));
+						amt = int(min(random(1, random(1, 20)), mag.MaxAmount, MaxCapacity / (max(1.0, mag.RoundBulk) * max(1.0, mag.MagBulk) * 5)));
+						Storage.AddAmount(Picked, amt, flags: 0);
+						break;
+					case IType_Pickup:
+						let pkp = GetDefaultByType((class<HDPickup>)(Picked));
+						amt = int(min(random(1, pkp.bMULTIPICKUP ? random(1, 80) : random(1, random(1, 20))), pkp.MaxAmount, MaxCapacity / (max(1.0, pkp.bulk) * 5.0)));
+						if (pkp.RefId == "")
+						{
+							amt = random(-2, amt);
+						}
+						if (amt > 0)
+						{
+							Storage.AddAmount(Picked, amt, flags: 0);
+						}
+						break;
+				}
+				if(hd_debug)A_Log(Picked.GetClassName().."  "..amt);
+			}
+		}
 		
 		States
 		{
@@ -185,5 +223,23 @@ class HDGearBox: HDBackpack
 				Stop;
 		}
 }
+
+//semi-filled gear crates at random
+class WildGearBox : IdleDummy {
+		//$Category "Items/Hideous Destructor/Gear"
+		//$Title "Gear Crate (Random Spawn)"
+		//$Sprite "GRCRA0"
+	override void postbeginplay() {
+		super.postbeginplay();
+
+		let aaa = HDGearBox(spawn("HDGearBox", pos, ALLOW_REPLACE));
+		aaa.RandomContents();
+
+		HDF.TransferSpecials(self, aaa);
+		
+		destroy();
+	}
+}
+
 #include "zscript/bkp_gearbox_itemstorage.zsc"
 #include "zscript/bkp_gearbox_drawhudstuff.zsc"
