@@ -1,2 +1,5 @@
 server float gb_box_spawn_bias = 25.6;
 // These are server scope so multiplayer games run properly. 
+
+// Merchant Store Filters
+server bool hdm_enable_gearbox = true;

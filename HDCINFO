@@ -1,3 +1,6 @@
 // Backpack Spawns
 newSpawnTable => { "spawnName": "WildBackpack", "tableName": "Gearbox.BackpackSpawns", "replaces": "false" }
 addSpawnTableSingleEntry => { "tableName": "Gearbox.BackpackSpawns", "name": "WildGearBox", "chance": "#gb_box_spawn_bias", "replaces": "false" }
+
+// Merchant Store Entries
+newMerchantStoreItem => { "enabled": "#hdm_enable_gearbox", "type": "item", "category": "$MERCH_CAT_GEARBOX", "item": "WildGearbox", "icon": "GRCRA0", "displayName": "$MERCH_TAG_GEARBOX", "basePrice": "400", "flavorText": "$MERCH_FLAVOR_GEARBOX" }
