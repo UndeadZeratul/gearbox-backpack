@@ -1,5 +1,8 @@
 [enu default]
 
+TAG_GEARBOX                       = "Gear Box";
+PICKUP_GEARBOX                    = "Picked up a gear box!";
+
 // Merchant Store Entries
 
 // Gearbox Backpack

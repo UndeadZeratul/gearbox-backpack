@@ -1,227 +1,150 @@
-// So we're not getting INT.max every tic. 
-enum HDGearMagicNumbers : int
-{
-	BULKFACTOR=INT.max,
-}
 
 const HDLD_GEARBOX = "box";
 
-class HDGearBox: HDBackpack
-{
+class HDGearBox : HDStorageItem {
+	default {
+		+Inventory.INVBAR
+		+Weapon.WIMPY_WEAPON
+		+HDWeapon.DROPTRANSLATION
+		+HDWeapon.FITSINBACKPACK
+		+HDWeapon.ALWAYSSHOWSTATUS
+		+HDWeapon.IGNORELOADOUTAMOUNT
+		+HDWeapon.HINDERLEGS
 
-		// These are so FAK can edit the bulkfactor (and loadout codes?). 
-		Array<int> CrateStatus;
-		double     bulkmod;
-		default
-		{
-			tag "Gear Box";
-			HDBackpack.MaxCapacity BULKFACTOR;
-			Inventory.Icon "GRCRA0";
-			Inventory.PickupMessage "Picked up a gear box!";
-			scale 0.5;
-			
-			// Makes weapon sounds. 
-			inventory.pickupsound "misc/w_pkup";
-			
-			// Not worn at all.
-			hdweapon.wornlayer 0;
-			hdweapon.refid HDLD_GEARBOX;
-		}
-		
+		Weapon.SelectionOrder 1010;
+
+		Tag "$TAG_GEARBOX";
+		Inventory.Icon "GRCRA0";
+		Inventory.PickupMessage "$PICKUP_GEARBOX";
+		scale 0.5;
+
+		// Makes weapon sounds
+		// Inventory.PickupSound "misc/w_pkup";
+
+		// Not worn at all.
+		HDWeapon.wornlayer 0;
+		HDWeapon.refid HDLD_GEARBOX;
+
 		// Heavy, but always predictably so.
-		override double WeaponBulk()
-		{
-			double result = 0;
-			
-			// Nullcheck.
-			if(CrateStatus.size())
-			{
-				// Returns normal weight if under the threshold,
-				// Normal weight + excess bulk modified by a percentage after that,
-				// A static value after that. 
-				if(min(CrateStatus[0], Storage.TotalBulk) == CrateStatus[0])
-				{
-					result = CrateStatus[0] + ((Storage.TotalBulk - CrateStatus[0]) * Bulkmod);
+		HDStorageItem.MinBulk 500;
+
+		// Nearly infinite storage.
+		HDStorageItem.MaxCapacity 100000;
+		
+		HDStorageItem.MaxBunch 20;
+
+		HDWeapon.loadoutcodes "
+		\cu use \".\" to add items like \",\" in the loadout,
+		\cu e.g., bak.z66nogl.4505; \"???\" adds a few randoms.";
+	}
+
+	// Returns normal weight if under the threshold,
+	// Normal weight + excess bulk modified by a percentage after that,
+	// A static value after that. 
+	override double WeaponBulk() {
+		return ContainerBulk(itemBulk);
+	}
+
+	//how much space it takes inside another container
+	//if we don't do this then things nested inside multiple containers
+	//eventually have almost no bulk at all
+	override double ContainerBulk(double it) const {
+
+		//     0blk => 500 + ((  0 - 500) * 0.25) => 500 + (-500 * 0.25) => 500 - 125 =>   375
+		//   100blk => 500 + ((100 - 500) * 0.25) => 500 + (-400 * 0.25) => 500 - 100 =>   400
+		//   200blk => 500 + ((200 - 500) * 0.25) => 500 + (-300 * 0.25) => 500 -  75 =>   425
+		//   300blk => 500 + ((300 - 500) * 0.25) => 500 + (-200 * 0.25) => 500 -  50 =>   450
+		//   400blk => 500 + ((400 - 500) * 0.25) => 500 + (-100 * 0.25) => 500 -  25 =>   475
+		//   500blk => 500 + ((500 - 500) * 0.25) => 500 + (   0 * 0.25) => 500 -   0 =>   500
+		//   600blk =>                                                                     600
+		//  1000blk =>                                                                    1000
+		//  5000blk =>                                                                    5000
+		// 10000blk =>                                                                   10000
+		return it < minBulk ? (minBulk + ((it - minBulk) * 0.25)) : it;
+	}
+
+	// check if an item can be added at all
+	override bool CanFitInThisContainer(Class<Inventory> itemType) {
+		let item = getDefaultByType(itemType);
+		return item && (HDPickup(item) || HDWeapon(item)) && !(item.bNOINTERACTION|item.bUNDROPPABLE|item.bUNTOSSABLE);
+	}
+	
+	// sometimes particular instances of an item may vary
+	override bool ThisCanFitInThisContainer(Inventory item) {
+		return item && (HDPickup(item) || HDWeapon(item)) && !(item.bNOINTERACTION|item.bUNDROPPABLE|item.bUNTOSSABLE);
+	}
+
+	override bool IsBeingWorn() { return false; }
+
+	// TODO: Localize
+	override string pickupMessage() {
+		string msg = super.pickupMessage();
+		double bulk = WeaponBulk();
+
+		if(items.size() < 1 && !owner) {
+			switch (random(0, 6)) {
+				case 0:
+					msg = msg.." Best not to look inside too long...";
+					break;
+				case 1:
+					msg = msg.." What a feat of engineering!";
+					break;
+				case 2:
+					msg = msg.." If only you could fit inside.";
+					break;
+				default:
+					break;
+			}
+		} else if (bulk <= MinBulk) {
+			switch (random(0, 10)) {
+				case 0:
+					msg = msg.." It's as ergonomic as it looks...";
+					break;
+				default:
+					break;
+			}
+		} else if (bulk >= MinBulk * 2) {
+			switch (random(0, 10)) {
+				case 0:
+					msg = msg.." A black hole in your pocket.";
+					break;
+				case 1:
+					msg = msg.." You have a serious problem.";
+					break;
+				case 2:
+					msg = msg.." None shall escape it.";
+					break;
+				default:
+					break;
+			}
+		} else if (bulk > MinBulk) {
+			switch (random(0, 10)) {
+				case 0:
+					msg = msg.." It feels warm to the touch.";
+					break;
+				case 1:
+					msg = msg.." Ah, hoard sweet hoard.";
+					break;
+				default:
+					break;
+			}
+		}
+
+		return msg;
+	}
+
+	states(actor) {
+		spawn:
+			GRCR AB -1 nodelay {
+				if (items.size() < 1) {
+					frame = 0;
+				} else if (target) {
+					translation = target.translation;
+					frame = 1;
 				}
-				else
-				{
-					result = Storage.TotalBulk;
-				}
 			}
-			return result;
-		}
-		
-		
-		
-		override void loadoutconfigure(string input)
-		{
-			// These are grabbed once, since we need to do comparisons with
-			// the values. 
-			
-			// Max of 9999
-			int    newthreshold = GetLoadoutVar(input, "threshold", 4);
-			
-			// "Max" of 999, really is 100
-			double newbulkmod   = GetLoadoutVar(input, "modifier", 3);
-			
-			// Just checks to make sure the value exists. 
-			if(newthreshold != -1)
-			{
-				CrateStatus[0] = newthreshold;
-			}
-			
-			// more or less claps newbulkmod and prevents bad input. 
-			if(newbulkmod <= 100 && newbulkmod >= 1)
-			{
-				Bulkmod  = newbulkmod/100;
-			}
-			else if(newbulkmod > 100)
-			{
-				bulkmod  = 1;
-			}
-		}
-		
-		override void beginplay()
-		{	
-			Super.BeginPlay();
-
-			// Default weight threshold.
-			CrateStatus.push(500);
-
-			// Default bulk modification. 
-			Bulkmod = 0.25;
-
-			// Initialize ItemStorage
-			Storage = New('GearBox_ItemStorage');
-			UpdateCapacity();
-		}
-
-		override string pickupmessage()
-		{
-			string msg=super.pickupmessage();
-			if(Storage.TotalBulk ~== 0 && !owner)
-			{
-					switch(random(0,6))
-					{
-						case 0:
-							msg = msg.." Best not to look inside too long...";
-							break;
-						case 1:
-							msg = msg.." What a feat of engineering!";
-							break;
-						case 2:
-							msg = msg.." If only you could fit inside.";
-							break;
-						default:
-							break;
-					}
-			}
-			else if(WeaponBulk() <= CrateStatus[0])
-			{
-					switch(random(0,10))
-					{
-						case 0:
-							msg = msg.." It's as ergonomic as it looks...";
-							break;
-						default:
-							break;
-					}
-			}
-			else if(WeaponBulk() >= CrateStatus[0]*2)
-			{
-					switch(random(0,10))
-					{
-						case 0:
-							msg = msg.." A black hole in your pocket.";
-							break;
-						case 1:
-							msg = msg.." You have a serious problem.";
-							break;
-						case 2:
-							msg = msg.." None shall escape it.";
-							break;
-						default:
-							break;
-					}
-			}
-			else if(WeaponBulk() > CrateStatus[0])
-			{
-					switch(random(0,10))
-					{
-						case 0:
-							msg = msg.." It feels warm to the touch.";
-							break;
-						case 1:
-							msg = msg.." Ah, hoard sweet hoard.";
-							break;
-						default:
-							break;
-					}
-			}
-
-			return msg;
-		}
-		
-		override string, double GetPickupSprite() { return "GRCRA0", 1.0; }
-
-		override void RandomContents(bool clear) {
-			if (clear) {
-				Storage.Destroy();
-				Storage = new('GearBox_ItemStorage');
-				UpdateCapacity();
-			}
-
-			if (hd_debug)A_Log("\n*  Gear Crate:  *");
-
-			int MaxItems = clamp(int(7 * hd_encumbrance), 1, 7);
-			for(int i = 0; i < MaxItems; ++i){
-				int amt;
-				class<Inventory> Picked = BPSpawnPool.GetValidItem();
-				switch(Storage.CheckConditions(null, Picked)){
-					case IType_Weapon:
-						amt = 1;
-						Storage.AddAmount(Picked, amt, flags: 0);
-						break;
-					case IType_Mag:
-						let mag = GetDefaultByType((class<HDMagAmmo>)(Picked));
-						amt = int(min(random(1, random(1, 20)), mag.MaxAmount, MaxCapacity / (max(1.0, mag.RoundBulk) * max(1.0, mag.MagBulk) * 5)));
-						Storage.AddAmount(Picked, amt, flags: 0);
-						break;
-					case IType_Pickup:
-						let pkp = GetDefaultByType((class<HDPickup>)(Picked));
-						amt = int(min(random(1, pkp.bMULTIPICKUP ? random(1, 80) : random(1, random(1, 20))), pkp.MaxAmount, MaxCapacity / (max(1.0, pkp.bulk) * 5.0)));
-						if (pkp.RefId == "")
-						{
-							amt = random(-2, amt);
-						}
-						if (amt > 0)
-						{
-							Storage.AddAmount(Picked, amt, flags: 0);
-						}
-						break;
-				}
-				if(hd_debug)A_Log(Picked.GetClassName().."  "..amt);
-			}
-		}
-		
-		States
-		{
-			Spawn:
-				GRCR AB -1 NoDelay
-				{
-					if (invoker.Storage.TotalBulk ~== 0)
-					{
-						frame = 0;
-					}
-					else if(target)
-					{
-						translation = target.translation;
-						frame = 1;
-					}
-					invoker.bNO_AUTO_SWITCH = false;
-				}
-				Stop;
-		}
+			stop;
+	}
 }
 
 //semi-filled gear crates at random
@@ -229,17 +152,14 @@ class WildGearBox : IdleDummy {
 		//$Category "Items/Hideous Destructor/Gear"
 		//$Title "Gear Crate (Random Spawn)"
 		//$Sprite "GRCRA0"
-	override void postbeginplay() {
-		super.postbeginplay();
+	override void postBeginPlay() {
+		super.postBeginPlay();
 
 		let aaa = HDGearBox(spawn("HDGearBox", pos, ALLOW_REPLACE));
-		aaa.RandomContents();
+		aaa.RandomContents('HDCoreStorageItemList', frandom(0.001, 0.01), false);
 
 		HDF.TransferSpecials(self, aaa);
 		
 		destroy();
 	}
 }
-
-#include "zscript/bkp_gearbox_itemstorage.zsc"
-#include "zscript/bkp_gearbox_drawhudstuff.zsc"
