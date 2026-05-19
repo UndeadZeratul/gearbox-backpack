@@ -1,5 +1,5 @@
 // Backpack Spawns
-newSpawnTable => { "spawnName": "WildBackpack", "tableName": "Gearbox.BackpackSpawns", "replaces": "false" }
+newSpawnTable => { "spawnName": "HDBackpack", "tableName": "Gearbox.BackpackSpawns", "replaces": "false" }
 addSpawnTableSingleEntry => { "tableName": "Gearbox.BackpackSpawns", "name": "WildGearBox", "chance": "#gb_box_spawn_bias", "replaces": "false" }
 
 // Merchant Store Entries
