@@ -16,6 +16,7 @@ class HDGearBox : HDStorageItem {
 		Tag "$TAG_GEARBOX";
 		Inventory.Icon "GRCRA0";
 		Inventory.PickupMessage "$PICKUP_GEARBOX";
+		Inventory.PickupSound "weapons/pocket";
 		scale 0.5;
 
 		// Makes weapon sounds
